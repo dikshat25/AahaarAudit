@@ -1,6 +1,7 @@
 import json
 import os
 from datetime import datetime, timedelta
+from .explainer import generate_explanation
 
 def check_expiry(expiry_date: str) -> dict:
     try:
@@ -56,12 +57,13 @@ def check_completeness(payload: dict) -> dict:
 def verify_product(payload: dict) -> dict:
     completeness_result = check_completeness(payload)
     if completeness_result["status"] == "incomplete_data":
+        details = {"completeness": completeness_result}
+        flags = ["incomplete_data"]
         return {
             "status": "flagged",
-            "flags": ["incomplete_data"],
-            "details": {
-                "completeness": completeness_result
-            }
+            "flags": flags,
+            "details": details,
+            "explanation": generate_explanation(flags, details, payload)
         }
         
     expiry_result = check_expiry(payload["expiry_date"])
@@ -75,12 +77,15 @@ def verify_product(payload: dict) -> dict:
         
     status = "flagged" if flags else "clear"
     
+    details = {
+        "expiry": expiry_result,
+        "supplier": supplier_result,
+        "completeness": completeness_result
+    }
+    
     return {
         "status": status,
         "flags": flags,
-        "details": {
-            "expiry": expiry_result,
-            "supplier": supplier_result,
-            "completeness": completeness_result
-        }
+        "details": details,
+        "explanation": generate_explanation(flags, details, payload)
     }

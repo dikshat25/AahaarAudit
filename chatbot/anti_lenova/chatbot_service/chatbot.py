@@ -2,7 +2,8 @@ import os
 from groq import Groq
 from dotenv import load_dotenv
 
-load_dotenv()
+env_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(env_path)
 
 def load_app_info():
     kb_path = os.path.join(os.path.dirname(__file__), 'knowledge_base', 'app_info.md')

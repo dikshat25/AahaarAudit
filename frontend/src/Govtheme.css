@@ -1,0 +1,79 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Merriweather:wght@700;900&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap');
+
+:root {
+  --gov-navy: #0A2647;
+  --gov-navy-light: #1D4E89;
+  --gov-saffron: #FF9933;
+  --gov-green: #1B7A3D;
+  --gov-maroon: #7A1220;
+  --gov-paper: #F6F5F1;
+}
+
+html, body {
+  font-family: 'Inter', 'Noto Sans Devanagari', system-ui, sans-serif;
+}
+
+/* ---------- Official "glass panel" card, government-document flavored ---------- */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(10, 38, 71, 0.10);
+  border-radius: 0.6rem;
+  box-shadow: 0 1px 2px rgba(10,38,71,0.06), 0 4px 16px rgba(10,38,71,0.07);
+}
+
+/* ---------- Government top strip (tricolor hairline + emblem row) ---------- */
+.gov-strip-tricolor {
+  height: 4px;
+  width: 100%;
+  background: linear-gradient(90deg, #FF9933 0 33.3%, #FFFFFF 33.3% 66.6%, #128807 66.6% 100%);
+}
+
+.gov-topbar {
+  background: #FFFFFF;
+  border-bottom: 1px solid rgba(10,38,71,0.12);
+  font-size: 0.75rem;
+}
+
+.gov-navbar {
+  background: linear-gradient(180deg, var(--gov-navy) 0%, #0D2E52 100%);
+}
+
+.gov-emblem-ring {
+  border-radius: 9999px;
+  border: 2px solid var(--gov-saffron);
+  background: #FFFFFF;
+}
+
+/* ---------- Devanagari text utility ---------- */
+.font-devanagari {
+  font-family: 'Noto Sans Devanagari', 'Noto Sans', sans-serif;
+}
+
+/* ---------- Ashoka-chakra inspired spinner ---------- */
+@keyframes chakra-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes chakra-fade-in {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes splash-tagline-cycle {
+  0%, 100% { opacity: 0; transform: translateY(6px); }
+  10%, 28% { opacity: 1; transform: translateY(0); }
+}
+
+.chakra-wheel {
+  animation: chakra-rotate 7s linear infinite;
+  transform-origin: 50% 50%;
+}
+
+.splash-fade-in {
+  animation: chakra-fade-in 0.6s ease-out both;
+}
+
+/* Scrollbar hide utility already referenced elsewhere in app */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

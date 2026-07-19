@@ -1,8 +1,15 @@
 import os
+import sys
 import uuid
 from typing import List, Optional
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+
+# Add chatbot directory to path to import friend's modules
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "chatbot", "anti_lenova")))
+from chatbot_service.chatbot import answer_question
+from agents.product_verification.verifier import verify_product
 
 from core.db.firestore_client import get_db
 from agents.vision_inspection.vision_agent import VisionAgent
@@ -152,3 +159,33 @@ async def get_rankings():
         
     ranked = rank_kitchens(kitchens)
     return {"rankings": ranked}
+
+class ChatRequest(BaseModel):
+    message: str
+
+@router.post("/chat")
+async def chat_endpoint(req: ChatRequest):
+    reply = answer_question(req.message)
+    return {"reply": reply}
+
+class VerifyRequest(BaseModel):
+    kitchen_id: str
+    barcode: str
+    product_name: str
+    brand: str
+    manufacture_date: str
+    expiry_date: str
+    supplier_name: str
+    batch_number: str
+    scanned_at: str
+
+@router.post("/verify")
+async def verify_endpoint(req: VerifyRequest):
+    # Use model_dump for Pydantic v2 or dict() for v1. model_dump is safer if available, else dict
+    try:
+        payload = req.model_dump()
+    except AttributeError:
+        payload = req.dict()
+        
+    result = verify_product(payload)
+    return result

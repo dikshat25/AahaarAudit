@@ -48,7 +48,7 @@ class VisionAgent:
         base_results = self.base_model(img)
         for result in base_results:
             for box in result.boxes:
-                bbox = box.xywh[0].tolist() 
+                bbox = box.xywhn[0].tolist() 
                 conf = box.conf[0].item()
                 cls_id = int(box.cls[0].item())
                 cls_name = self.base_model.names[cls_id]
@@ -64,7 +64,7 @@ class VisionAgent:
             ppe_results = self.ppe_model(img)
             for result in ppe_results:
                 for box in result.boxes:
-                    bbox = box.xywh[0].tolist() 
+                    bbox = box.xywhn[0].tolist() 
                     conf = box.conf[0].item()
                     cls_id = int(box.cls[0].item())
                     cls_name = self.ppe_model.names[cls_id]
