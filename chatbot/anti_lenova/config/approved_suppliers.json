@@ -1,0 +1,22 @@
+[
+  {
+    "supplier_name": "Fresh Farms",
+    "supplier_id": "SUP001",
+    "registered_since": "2020-01-15"
+  },
+  {
+    "supplier_name": "Global Foods",
+    "supplier_id": "SUP002",
+    "registered_since": "2019-05-20"
+  },
+  {
+    "supplier_name": "Local Organics",
+    "supplier_id": "SUP003",
+    "registered_since": "2021-11-10"
+  },
+  {
+    "supplier_name": "Quality Meats",
+    "supplier_id": "SUP004",
+    "registered_since": "2018-08-01"
+  }
+]

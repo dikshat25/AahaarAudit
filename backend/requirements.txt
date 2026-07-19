@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+python-dotenv
+firebase-admin
+pydantic
+ultralytics
+google-genai
+groq
+python-multipart
+requests
+pillow-avif-plugin

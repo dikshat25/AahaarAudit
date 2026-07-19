@@ -1,19 +1,30 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Shield, Mail, Lock, ArrowRight, Activity } from 'lucide-react';
+import { Shield, Mail, Lock, ArrowRight, Activity, AlertCircle } from 'lucide-react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../firebase';
 
 export default function Login() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     setIsLoading(true);
-    // Simulate auth delay
-    setTimeout(() => {
-      setIsLoading(false);
+    
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
       navigate('/dashboard');
-    }, 800);
+    } catch (err) {
+      setError(err.message || 'Failed to login. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -31,6 +42,13 @@ export default function Login() {
             <h2 className="text-2xl font-bold text-emerald-950 mb-2">Authority Portal Login</h2>
             <p className="text-emerald-700 text-sm">Enter your official credentials to access the multi-agent dashboard.</p>
           </div>
+          
+          {error && (
+            <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm flex items-center gap-2">
+              <AlertCircle className="w-5 h-5" />
+              <span>{error}</span>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
@@ -42,6 +60,8 @@ export default function Login() {
                 <input
                   type="email"
                   required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="inspector@mahafda.gov.in"
                   className="block w-full pl-10 pr-3 py-2.5 border border-emerald-200 rounded-lg bg-emerald-50 text-emerald-950 placeholder-emerald-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
                 />
@@ -60,6 +80,8 @@ export default function Login() {
                 <input
                   type="password"
                   required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="block w-full pl-10 pr-3 py-2.5 border border-emerald-200 rounded-lg bg-emerald-50 text-emerald-950 placeholder-emerald-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
                 />
