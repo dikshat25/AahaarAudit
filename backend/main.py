@@ -3,8 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import sys
 import os
+# Add the repository root (contains `backend` and `chatbot`) to PYTHONPATH
+repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if repo_root not in sys.path:
+    sys.path.append(repo_root)
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from api.routes import router as api_router
 
