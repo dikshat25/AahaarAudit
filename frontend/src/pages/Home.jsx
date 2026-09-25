@@ -56,9 +56,6 @@ export default function Home() {
               <Link to="/signup" className="bg-[#FF9933] hover:bg-amber-500 text-[#0A2647] px-8 py-4 rounded-xl font-bold text-lg flex items-center gap-2 transition-transform hover:scale-105 shadow-xl shadow-[#FF9933]/30">
                 Get Started <ArrowRight className="w-5 h-5" />
               </Link>
-              <a href="#demo" className="bg-white border border-[#0A2647]/15 hover:border-[#0A2647]/30 text-[#0A2647] px-8 py-4 rounded-xl font-bold text-lg flex items-center gap-2 transition-colors shadow-sm">
-                View Demo
-              </a>
             </div>
           </div>
         </section>
