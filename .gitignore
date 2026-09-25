@@ -1,8 +1,53 @@
+# ── Dependencies ───────────────────────────────────────────────
 frontend/node_modules/
+backend/venv/
 backend/.venv/
-backend/__pycache__/
+
+# ── Python cache ───────────────────────────────────────────────
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+*.egg-info/
+.eggs/
+
+# ── Environment files (NEVER commit secrets) ───────────────────
 .env
+.env.local
+.env.production
+backend/.env
+frontend/.env
+
+# ── Firebase service account (contains private key) ────────────
+*.json
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/.oxlintrc.json
+!frontend/tsconfig*.json
+!render.yaml
+
+# ── Build output ───────────────────────────────────────────────
+frontend/dist/
+frontend/.vite/
+
+# ── Temp & upload files ────────────────────────────────────────
+temp_uploads/
 *.jpg
+*.jpeg
+*.png
 *.webp
 *.avif
-temp_uploads/
+
+# ── ML model weights (large binary files) ─────────────────────
+*.pt
+*.onnx
+*.weights
+
+# ── IDE & OS ───────────────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# ── Jupyter ────────────────────────────────────────────────────
+*.ipynb_checkpoints/

@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: aahaaraudit-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: REQUESTY_API_KEY
+        sync: false
+      - key: REQUESTY_API_URL
+        value: https://router.requesty.ai/v1/chat/completions
+      - key: REQUESTY_MODEL
+        value: xiaomi/mimo-v2.6-flash
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: PORT
+        value: 8000

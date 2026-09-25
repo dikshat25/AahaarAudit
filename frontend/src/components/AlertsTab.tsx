@@ -61,15 +61,63 @@ const EvidenceThumbnail = ({ alert }: { alert: Alert }) => {
   return null;
 }
 
+import { fetchAlerts } from '../api/backendApi';
+
 export default function AlertsTab() {
-  const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
+  const [selectedAlert, setSelectedAlert] = useState<any | null>(null);
+  const [liveAlerts, setLiveAlerts] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    const load = async () => {
+      const data = await fetchAlerts();
+      if (Array.isArray(data)) {
+        setLiveAlerts(data);
+      }
+    };
+    load();
+    const iv = setInterval(load, 5000);
+    return () => clearInterval(iv);
+  }, []);
 
   return (
     <div className="max-w-5xl mx-auto flex flex-col h-full gap-6">
       <div className="flex justify-between items-center mb-2">
-        <h2 className="text-xl font-bold text-emerald-950">Live Alert Feed</h2>
-        <span className="text-sm font-mono text-emerald-600">Total: {MOCK_ALERTS.length} High-Risk Flags</span>
+        <div>
+          <h2 className="text-xl font-bold text-emerald-950">Live Alert Feed</h2>
+          <p className="text-xs text-emerald-700">Real-time alerts synced from AI Vision Ingestion & FastAPI database</p>
+        </div>
+        <span className="text-xs font-mono bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full animate-pulse">
+          ● {liveAlerts.length} Live FastAPI Alerts | {MOCK_ALERTS.length} System Flags
+        </span>
       </div>
+
+      {/* Live backend alerts section */}
+      {liveAlerts.length > 0 && (
+        <div className="space-y-3 mb-2">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-red-600 flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-red-600 animate-ping"></span> Live Ingestion Alerts
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {liveAlerts.map((la: any) => (
+              <div
+                key={la.alert_id}
+                className="bg-red-50/80 border-2 border-red-200 rounded-xl p-4 shadow-sm hover:border-red-400 transition-colors"
+              >
+                <div className="flex justify-between items-start">
+                  <span className="text-[10px] font-mono font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded">
+                    EST: {la.establishment_id}
+                  </span>
+                  <span className="text-xs font-mono text-gray-500">
+                    {new Date(la.timestamp).toLocaleTimeString()}
+                  </span>
+                </div>
+                <h4 className="font-bold text-red-900 text-sm mt-2">{la.message}</h4>
+                <p className="text-xs text-red-700 mt-1">Severity: <span className="font-bold uppercase">{la.severity}</span> | ID: {la.alert_id}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 auto-rows-max">
         {MOCK_ALERTS.map((alert, i) => (

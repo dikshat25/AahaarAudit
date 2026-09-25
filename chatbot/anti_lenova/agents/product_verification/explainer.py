@@ -1,16 +1,14 @@
 import os
-from groq import Groq
-from dotenv import load_dotenv
+import sys
 
-env_path = os.path.join(os.path.dirname(__file__), '..', '..', 'chatbot_service', '.env')
-load_dotenv(env_path)
+# Add backend to path to use the unified failover gateway
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'backend')))
+from core.llm_gateway import call_llm
 
 def generate_explanation(flags: list, details: dict, payload: dict) -> str:
     if not flags:
         return "Conclusion: The product passed all checks and is safe for use."
         
-    client = Groq()
-    
     prompt = f"""
     You are an expert food safety inspector and auditor. A product was just scanned and flagged for the following issues: {', '.join(flags)}.
     
@@ -26,13 +24,7 @@ def generate_explanation(flags: list, details: dict, payload: dict) -> str:
     """
     
     try:
-        chat_completion = client.chat.completions.create(
-            messages=[
-                {"role": "system", "content": "You are a professional food safety compliance auditor."},
-                {"role": "user", "content": prompt}
-            ],
-            model="llama-3.1-8b-instant",
-        )
-        return chat_completion.choices[0].message.content
+        # Defaults to the failover system starting with Groq
+        return call_llm(prompt, provider="groq")
     except Exception as e:
-        return "Explanation could not be generated at this time due to an AI service error."
+        return f"Explanation could not be generated at this time due to an AI service error: {e}"

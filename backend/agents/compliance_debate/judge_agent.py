@@ -5,7 +5,7 @@ import json
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 from core.llm_gateway import call_llm
 
-def run_judge(facts: str, gemini_original: str, groq_original: str, gemini_critique: str = "", groq_critique: str = "") -> dict:
+def run_judge(facts: str, gemini_original: str, groq_original: str, gemini_critique: str = "", groq_critique: str = "", provider: str = "gemini") -> dict:
     """
     Acts as the final judge to produce the final verdict.
     """
@@ -31,7 +31,7 @@ def run_judge(facts: str, gemini_original: str, groq_original: str, gemini_criti
     """
     
     # We use Gemini for the judge as it's typically better at complex reasoning and JSON output.
-    response_text = call_llm(prompt, provider='gemini')
+    response_text = call_llm(prompt, provider=provider)
     
     try:
         import re
@@ -44,9 +44,4 @@ def run_judge(facts: str, gemini_original: str, groq_original: str, gemini_criti
         result = json.loads(json_str)
         return result
     except Exception as e:
-        print(f"Error parsing Judge output: {e}\nOutput was: {response_text}")
-        return {
-            "verdict": "unresolved",
-            "confidence": 0.0,
-            "justification": "Judge parsing failed, defaulting to manual review"
-        }
+        raise RuntimeError(f"Judge returned invalid JSON: {e}") from e

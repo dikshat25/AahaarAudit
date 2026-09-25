@@ -1,10 +1,11 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Shield, Mail, Lock, ArrowRight, Activity, AlertCircle } from 'lucide-react';
 import GovHeader from '../components/GovHeader';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase';
+import { fetchMyProfile } from '../api/authApi';
+import { ROLE_HOME_ROUTE } from '../config/roles';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -18,10 +19,15 @@ export default function Login() {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-    
+
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate('/dashboard');
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const idToken = await cred.user.getIdToken();
+
+      // Role lives in Firestore, not the Firebase Auth token, so we look it
+      // up right after sign-in to know which dashboard to send them to.
+      const profile = await fetchMyProfile(idToken);
+      navigate(ROLE_HOME_ROUTE[profile.role] || '/dashboard');
     } catch (err) {
       setError(err.message || 'Failed to login. Please check your credentials.');
     } finally {
@@ -45,20 +51,20 @@ export default function Login() {
       <main className="flex-1 flex items-center justify-center p-6" id="main-content">
         <div className="w-full max-w-md bg-white rounded-2xl shadow-gov-card border border-[#0A2647]/10 p-8">
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-display font-bold text-[#0A2647] mb-2">Authority Portal Login</h2>
-            <p className="text-[#0A2647]/70 text-sm">Enter your official credentials to access the multi-agent dashboard.</p>
+            <h2 className="text-2xl font-display font-bold text-[#0A2647] mb-2">Welcome Back</h2>
+            <p className="text-[#0A2647]/70 text-sm">Sign in to your Customer, Regulator, or Owner account.</p>
           </div>
-          
+
           {error && (
             <div className="mb-6 p-3 bg-[#7A1220]/10 border border-[#7A1220]/30 text-[#7A1220] rounded-lg text-sm flex items-center gap-2">
-              <AlertCircle className="w-5 h-5" />
+              <AlertCircle className="w-5 h-5 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-[#0A2647] mb-1">Official Email ID</label>
+              <label className="block text-sm font-medium text-[#0A2647] mb-1">Email</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Mail className="h-5 w-5 text-[#0A2647]/40" />
@@ -68,7 +74,7 @@ export default function Login() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="inspector@mahafda.gov.in"
+                  placeholder="you@example.com"
                   className="block w-full pl-10 pr-3 py-2.5 border border-[#0A2647]/15 rounded-lg bg-[#F6F5F1] text-[#0A2647] placeholder-navy-900/40 focus:outline-none focus:border-[#FF9933] focus:ring-1 focus:ring-[#FF9933] transition-colors"
                 />
               </div>
@@ -102,15 +108,15 @@ export default function Login() {
               {isLoading ? (
                 <><Activity className="w-5 h-5 animate-spin" /> Authenticating...</>
               ) : (
-                <>Access Dashboard <ArrowRight className="w-5 h-5" /></>
+                <>Sign In <ArrowRight className="w-5 h-5" /></>
               )}
             </button>
           </form>
 
           <p className="mt-8 text-center text-sm text-[#0A2647]/70">
-            Don't have an authority account?{' '}
+            Don't have an account?{' '}
             <Link to="/signup" className="text-[#7A1220] font-bold hover:underline">
-              Request Access
+              Create Account
             </Link>
           </p>
         </div>

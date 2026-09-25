@@ -1,59 +1,79 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Download, FileSignature, Building2, Calendar, CheckCircle, Loader } from 'lucide-react';
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
-import { db } from '../firebase';
+import { FileText, Download, FileSignature, Building2, Calendar, CheckCircle, Loader, Search, Code2 } from 'lucide-react';
+import { fetchReports } from '../api/backendApi';
 
 export default function ReportsTab() {
   const [downloaded, setDownloaded] = useState<string | null>(null);
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchCmp, setSearchCmp] = useState('');
+
+  const loadAllReports = async (queryId = '') => {
+    setLoading(true);
+    try {
+      const q = queryId.trim();
+      const fetchedReports = await fetchReports(q.toUpperCase().startsWith('CMP-') ? q : null, !q.toUpperCase().startsWith('CMP-') && q ? q : null);
+      const normalizedReports = (Array.isArray(fetchedReports) ? fetchedReports : []).map(data => {
+        return {
+          id: data.id,
+          facility: data.facility || data.establishment_id || 'Unknown Facility',
+          date: data.date ? new Date(data.date).toLocaleDateString() : 'Unknown date',
+          type: data.type || 'Live Vision Inspection',
+          status: data.status || 'Generated',
+          summary: data.summary || data.report || 'Stored inspection report',
+          transcript: data.transcript || data.scorecard?.transcript || data.debate?.transcript,
+          risk_score: data.scorecard?.overall_score,
+          complaint_id: data.complaint_id,
+          scorecard: data.scorecard,
+          debate: data.debate,
+          raw: data,
+        };
+      });
+      setReports(normalizedReports);
+    } catch (err) {
+      console.error('Error fetching reports from Firestore:', err);
+      setReports([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        const eventsRef = collection(db, 'events');
-        // No orderBy just in case index is missing, simple getDocs
-        const snapshot = await getDocs(eventsRef);
-        const fetchedReports = snapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            facility: data.kitchen_id || 'Unknown Facility',
-            date: new Date().toLocaleDateString(), // No timestamp in backend data, fallback to today
-            type: data.status === 'ambiguous' ? 'Agent Debate Event' : 'Vision Inference Event',
-            status: 'Generated',
-            summary: `Risk Score: ${data.risk_score}. Justification: ${data.justification}`,
-            transcript: data.transcript,
-            risk_score: data.risk_score
-          };
-        });
-        setReports(fetchedReports);
-      } catch (err) {
-        console.error('Error fetching reports from Firestore:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchReports();
+    loadAllReports();
   }, []);
 
-  const handleDownload = (report) => {
+  const handleDownload = (report, format = 'txt') => {
     setDownloaded(report.id);
     
+    if (format === 'json') {
+      const jsonBlob = new Blob([JSON.stringify(report.raw || report, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(jsonBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Audit_Dossier_${report.complaint_id || report.id}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      return;
+    }
+
     let content = `AAHAAR-AUDIT OFFICIAL REGULATORY DOSSIER\n`;
     content += `=========================================\n`;
+    content += `Complaint ID: ${report.complaint_id || 'N/A'}\n`;
+    content += `Report ID: ${report.id}\n`;
     content += `Facility: ${report.facility}\n`;
     content += `Date: ${report.date}\n`;
     content += `Event Type: ${report.type}\n`;
-    content += `Risk Score: ${report.risk_score}\n\n`;
+    content += `Risk Score: ${report.risk_score ?? 'N/A'}\n\n`;
     content += `SUMMARY:\n${report.summary}\n\n`;
     
     if (report.transcript && report.transcript.length > 0) {
       content += `AGENT DEBATE TRANSCRIPT:\n`;
       content += `------------------------\n`;
       report.transcript.forEach((msg) => {
-        content += `[${msg.role.toUpperCase()}]\n${msg.content}\n\n`;
+        content += `[${(msg.role || msg.agent || 'AGENT').toUpperCase()}]\n${msg.content || msg.argument || msg.message}\n\n`;
       });
     }
     
@@ -64,18 +84,55 @@ export default function ReportsTab() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Audit_Report_${report.facility.replace(/\s+/g, '_')}_${report.id.substring(0,6)}.txt`;
+    link.download = `Audit_Report_${report.facility.replace(/\s+/g, '_')}_${report.complaint_id || report.id.substring(0,6)}.txt`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
 
+  const filteredReports = reports.filter((r) => {
+    if (!searchCmp.trim()) return true;
+    const s = searchCmp.trim().toLowerCase();
+    return (
+      (r.complaint_id && r.complaint_id.toLowerCase().includes(s)) ||
+      (r.id && r.id.toLowerCase().includes(s)) ||
+      (r.facility && r.facility.toLowerCase().includes(s))
+    );
+  });
+
   return (
     <div className="max-w-5xl mx-auto h-full flex flex-col gap-6">
-      <div className="flex justify-between items-center mb-2">
-        <h2 className="text-xl font-bold text-emerald-950">Regulatory Report Agent</h2>
-        <span className="text-sm font-mono text-emerald-600">Auto-Generated Dossiers</span>
+      <div className="bg-white rounded-2xl shadow-gov-card border border-[#0A2647]/10 p-5">
+        <div className="flex flex-wrap justify-between items-center gap-3 mb-3">
+          <div>
+            <h2 className="text-xl font-bold font-display text-[#0A2647]">Regulatory Report Agent</h2>
+            <p className="text-xs text-[#0A2647]/60">Auto-Generated AI Dossiers & Multi-Agent Deliberation Reports</p>
+          </div>
+          <span className="text-xs font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg font-bold">
+            {filteredReports.length} Reports Ready
+          </span>
+        </div>
+
+        {/* CMP-ID Search Retrieval Bar */}
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search className="w-4 h-4 text-[#0A2647]/40 absolute left-3 top-2.5" />
+            <input
+              type="text"
+              value={searchCmp}
+              onChange={(e) => setSearchCmp(e.target.value)}
+              placeholder="Search or retrieve by Complaint ID (e.g. CMP-47147)..."
+              className="w-full pl-9 pr-3 py-2 border border-[#0A2647]/15 rounded-lg text-sm bg-[#F6F5F1] text-[#0A2647] focus:outline-none focus:border-[#FF9933]"
+            />
+          </div>
+          <button
+            onClick={() => loadAllReports(searchCmp)}
+            className="bg-[#0A2647] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#0A2647]/90 transition-colors shadow-sm"
+          >
+            Retrieve Report
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -84,65 +141,91 @@ export default function ReportsTab() {
             <Loader className="w-8 h-8 animate-spin" />
             <span className="ml-3 font-mono">Fetching reports from Firestore...</span>
           </div>
-        ) : reports.length === 0 ? (
-          <div className="flex items-center justify-center p-8 w-full col-span-2 text-emerald-600 font-mono">
-            No reports found in the database.
+        ) : filteredReports.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-8 w-full col-span-2 text-center bg-white rounded-2xl border border-amber-200 p-6 text-amber-800">
+            <p className="font-semibold text-sm">No inspection reports found {searchCmp ? `for "${searchCmp}"` : 'in database'}.</p>
+            <p className="text-xs text-amber-700 mt-1">Run an AI Camera Live Inspection in Admin Complaints or Inspections to generate report dossiers.</p>
           </div>
         ) : (
-          reports.map((report, i) => (
+          filteredReports.map((report, i) => (
             <motion.div
               key={report.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className="glass-panel p-6 flex flex-col justify-between"
-          >
-            <div>
-              <div className="flex justify-between items-start mb-4">
-                <div className="bg-white p-3 rounded-lg border border-emerald-200">
-                  <FileSignature className="w-6 h-6 text-emerald-600" />
-                </div>
-                <span className={`text-xs px-2 py-1 rounded-full border font-medium ${
-                  report.status === 'Generated' ? 'bg-brand-green/20 text-brand-green border-brand-green/30' : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-                }`}>
-                  {report.status}
-                </span>
-              </div>
-              
-              <h3 className="text-lg font-bold text-emerald-950 mb-2">{report.facility}</h3>
-              
-              <div className="flex gap-4 text-xs text-emerald-600 mb-4 font-mono">
-                <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {report.date}</span>
-                <span className="flex items-center gap-1"><FileText className="w-3 h-3" /> {report.type}</span>
-              </div>
-
-              <div className="bg-emerald-50/80 p-3 rounded border border-emerald-200 mb-6">
-                <p className="text-sm text-emerald-800 italic text-justify leading-relaxed">
-                  "{report.summary}"
-                </p>
-                <p className="text-xs text-emerald-500 mt-2 flex justify-end">— Auto-generated by Report Agent</p>
-              </div>
-            </div>
-
-            <button 
-              onClick={() => handleDownload(report)}
-              disabled={report.status !== 'Generated'}
-              className={`w-full py-3 rounded flex items-center justify-center gap-2 font-bold text-sm transition-all ${
-                downloaded === report.id 
-                  ? 'bg-brand-green/20 text-brand-green border border-brand-green/50 cursor-default'
-                  : report.status !== 'Generated'
-                    ? 'bg-white text-emerald-500 cursor-not-allowed border border-emerald-200'
-                    : 'bg-emerald-100 hover:bg-navy-600 text-emerald-900 border border-emerald-200'
-              }`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+              className="glass-panel p-6 flex flex-col justify-between rounded-2xl border border-[#0A2647]/10 bg-white shadow-gov-card"
             >
-              {downloaded === report.id ? (
-                <><CheckCircle className="w-4 h-4" /> Downloaded successfully!</>
-              ) : (
-                <><Download className="w-4 h-4" /> Download Official Dossier</>
-              )}
-            </button>
-          </motion.div>
-        )))}
+              <div>
+                <div className="flex justify-between items-start mb-4">
+                  <div className="bg-white p-3 rounded-lg border border-emerald-200">
+                    <FileSignature className="w-6 h-6 text-emerald-600" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {report.complaint_id && (
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-200">
+                        {report.complaint_id}
+                      </span>
+                    )}
+                    <span className={`text-xs px-2 py-1 rounded-full border font-medium ${
+                      report.status === 'Generated' ? 'bg-brand-green/20 text-brand-green border-brand-green/30' : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                    }`}>
+                      {report.status}
+                    </span>
+                  </div>
+                </div>
+                
+                <h3 className="text-lg font-bold text-[#0A2647] mb-1">{report.facility}</h3>
+                <p className="text-xs font-mono text-[#0A2647]/50 mb-3">Report ID: {report.id}</p>
+                
+                <div className="flex gap-4 text-xs text-emerald-700 mb-4 font-mono">
+                  <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {report.date}</span>
+                  <span className="flex items-center gap-1"><FileText className="w-3 h-3" /> {report.type}</span>
+                </div>
+
+                <div className="bg-emerald-50/80 p-3 rounded-xl border border-emerald-200 mb-4">
+                  <p className="text-xs text-emerald-950 italic text-justify leading-relaxed whitespace-pre-wrap">
+                    {report.summary}
+                  </p>
+                  <p className="text-[10px] text-emerald-700 mt-2 flex justify-end">— Auto-generated post-debate report</p>
+                </div>
+
+                {report.transcript && report.transcript.length > 0 && (
+                  <div className="mb-4 bg-indigo-50/50 p-2.5 rounded-lg border border-indigo-100 text-[11px] text-indigo-900">
+                    <span className="font-bold block mb-1">Debate Deliberation Attached:</span>
+                    <p className="text-indigo-800/80 line-clamp-2">
+                      {report.transcript[report.transcript.length - 1]?.content || 'Agent debate transcript recorded in JSON dossier.'}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-2 mt-2">
+                <button 
+                  onClick={() => handleDownload(report, 'txt')}
+                  disabled={report.status !== 'Generated'}
+                  className={`flex-1 py-2.5 rounded-xl flex items-center justify-center gap-1.5 font-bold text-xs transition-all ${
+                    downloaded === report.id 
+                      ? 'bg-brand-green/20 text-brand-green border border-brand-green/50'
+                      : 'bg-[#0A2647] hover:bg-[#153C6E] text-white'
+                  }`}
+                >
+                  {downloaded === report.id ? (
+                    <><CheckCircle className="w-3.5 h-3.5" /> Dossier Downloaded</>
+                  ) : (
+                    <><Download className="w-3.5 h-3.5" /> Text Dossier</>
+                  )}
+                </button>
+                <button
+                  onClick={() => handleDownload(report, 'json')}
+                  title="Download JSON Report"
+                  className="px-3 py-2.5 rounded-xl border border-[#0A2647]/20 text-[#0A2647] hover:bg-[#0A2647]/5 font-bold text-xs flex items-center gap-1"
+                >
+                  <Code2 className="w-3.5 h-3.5" /> JSON
+                </button>
+              </div>
+            </motion.div>
+          ))
+        )}
       </div>
     </div>
   );

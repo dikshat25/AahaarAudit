@@ -252,21 +252,35 @@ export default function LiveVisionTab() {
           </h3>
           <div className="space-y-4 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
             {inferenceResult.transcript.map((msg, idx) => {
-              const isGemini = msg.role.includes('gemini');
-              const isJudge = msg.role === 'judge';
-              const isUser = msg.role === 'user';
+              const roleLower = (msg.role || '').toLowerCase();
+              const isLegal = roleLower.includes('legal') || roleLower.includes('gemini');
+              const isJudge = roleLower === 'judge';
+              const isUser = roleLower === 'user';
               
+              const formatRoleName = (r: string) => {
+                const map: Record<string, string> = {
+                  gemini_legal: 'Food Security Legal Agent',
+                  groq_risk: 'Food Risk Agent',
+                  legal_review: 'Legal Compliance Agent',
+                  risk_review: 'Operational Risk Agent',
+                  gemini_critique: 'Legal Compliance Agent',
+                  groq_critique: 'Operational Risk Agent',
+                  judge: 'Chief Regulatory Magistrate'
+                };
+                return map[r] || r.replace(/_/g, ' ');
+              };
+
               return (
-                <div key={idx} className={`flex ${isGemini ? 'justify-start' : (isJudge ? 'justify-center' : (isUser ? 'justify-end' : 'justify-end'))}`}>
+                <div key={idx} className={`flex ${isLegal ? 'justify-start' : (isJudge ? 'justify-center' : (isUser ? 'justify-end' : 'justify-end'))}`}>
                   <div className={`max-w-[80%] rounded-xl p-3 ${
                     isUser ? 'bg-[#0A2647] text-white border-none rounded-tr-none' :
                     isJudge ? 'bg-amber-100 border border-amber-300 text-amber-900 w-full text-center font-medium' :
-                    isGemini ? 'bg-blue-50 border border-blue-200 text-blue-900 rounded-tl-none' :
+                    isLegal ? 'bg-blue-50 border border-blue-200 text-blue-900 rounded-tl-none' :
                     'bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-tr-none'
                   }`}>
                     <div className="flex items-center gap-2 mb-1 text-xs font-bold uppercase opacity-60">
                       {isUser ? '' : (isJudge ? <Scale className="w-3 h-3" /> : <Bot className="w-3 h-3" />)}
-                      {msg.role.replace('_', ' ')}
+                      {formatRoleName(msg.role)}
                     </div>
                     <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
                   </div>

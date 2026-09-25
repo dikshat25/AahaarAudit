@@ -1,5 +1,5 @@
 fastapi
-uvicorn
+uvicorn[standard]
 python-dotenv
 firebase-admin
 pydantic
@@ -8,4 +8,9 @@ google-genai
 groq
 python-multipart
 requests
-pillow-avif-plugin
+Pillow
+langchain
+langgraph
+langchain-groq
+langchain-google-genai
+httpx
